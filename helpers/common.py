@@ -8,6 +8,6 @@ import utils
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
-@PromptServer.instance.routes.get("/ping")
-async def get_hello(request):
+@PromptServer.instance.routes.get("/runcomfy/ping")
+async def ping(request):
     return web.json_response({"message": "pong"})

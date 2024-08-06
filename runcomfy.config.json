@@ -1,5 +1,7 @@
 {
 	"workflows": {
-		"directory": "runcomfy/workflows"
-	}
+		"directory": "runcomfy/workflows",
+		"default": "default.json"
+	},
+	"logging":true
 }

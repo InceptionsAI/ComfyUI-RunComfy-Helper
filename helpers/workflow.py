@@ -12,6 +12,8 @@ root_directory = os.path.dirname(inspect.getfile(PromptServer))
 workflows_directory = utils.get_config_value(
     "workflows.directory", "runcomfy/workflows")
 workflows_directory = os.path.join(root_directory, workflows_directory)
+default_workflow = utils.get_config_value(
+    "workflows.default", "default.json")
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -20,14 +22,22 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 async def get_workflow(request):
     # Get the file name from the query parameter 'name'
     name = request.query.get("name")
-    if not name:
-        return web.Response(status=400, text="Missing 'name' query parameter")
+    if not name or name == "" or name == "undefined":
+        name = default_workflow
 
     file = os.path.abspath(os.path.join(workflows_directory, name))
     if os.path.commonpath([file, workflows_directory]) != workflows_directory:
         return web.Response(status=403)
     
     if not os.path.exists(file):
-        return web.Response(status=404, text="Workflow not found")
+        utils.log(f"Workflow {name} not found", type="WARNING")
+        # Find the most recent updated file in the workflows_directory
+        files = os.listdir(workflows_directory)
+        files = [os.path.join(workflows_directory, file) for file in files]
+        files = [file for file in files if os.path.isfile(file)]
+        files = sorted(files, key=os.path.getmtime, reverse=True)
+        if not files:
+            return web.Response(status=404)
+        file = files[0]
 
     return web.FileResponse(file)

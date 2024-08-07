@@ -19,7 +19,7 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 @PromptServer.instance.routes.get("/runcomfy/workflows")
-async def get_workflow(request):
+async def get_workflows(request):
     # Get the file name from the query parameter 'name'
     name = request.query.get("name")
     if not name or name == "" or name == "undefined":
@@ -41,3 +41,26 @@ async def get_workflow(request):
         file = files[0]
 
     return web.FileResponse(file)
+
+@PromptServer.instance.routes.post("/runcomfy/workflows")
+async def save_workflows(request):
+    json_data = await request.json()
+    workflows = json_data["workflows"]
+
+    for workflow_data in workflows:
+        file_name = workflow_data["file_name"]
+        workflow = workflow_data["workflow"]
+        is_default = "default" in workflow_data and workflow_data["default"]
+
+        file_path = os.path.abspath(os.path.join(workflows_directory, file_name))
+        if os.path.commonpath([file_path, workflows_directory]) != workflows_directory:
+            return web.Response(status=403)
+
+        sub_path = os.path.dirname(file_path)
+        if not os.path.exists(sub_path):
+            os.makedirs(sub_path)
+
+        with open(file_path, "w") as f:
+            f.write(json.dumps(workflow))
+
+    return web.Response(status=201)

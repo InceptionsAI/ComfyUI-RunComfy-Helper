@@ -17,6 +17,17 @@ async function getWorkflow(name) {
 app.registerExtension({
 	name: "runcomfy.Workflows",
 	async setup() {
+		window.addEventListener('message', async (event) => {
+            console.log('iframe: Message from parent', event);
+
+			// Determine the target origin
+			const targetOrigin = event.origin !== "null" && event.origin !== "" ? event.origin : "*";
+
+			const customWorkflow = await getWorkflow();
+            // Send response back to parent
+            event.source.postMessage(customWorkflow, targetOrigin);
+        });
+
         const customWorkflow = await getWorkflow();
         if (customWorkflow === null) {
             console.log("Workflow not found");
@@ -25,5 +36,6 @@ app.registerExtension({
         await app.loadGraphData(customWorkflow);
 
         console.log("Custom workflow loaded by runcomfy.Workflows extension");
+
 	}
 });

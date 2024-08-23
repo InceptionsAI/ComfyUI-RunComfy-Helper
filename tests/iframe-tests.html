@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parent Page</title>
+    <style>
+        #myIframe {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <button id="sendMessageBtn">Send Message to Iframe</button>
+    <br><br>
+    <iframe id="myIframe" src="http://127.0.0.1:8188"></iframe>
+
+    <script>
+        const iframe = document.getElementById('myIframe');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+
+        // Function to send message to iframe
+        function sendMessageToIframe() {
+            console.log("parent: Sending message")
+            iframe.contentWindow.postMessage('Hello from parent!', '*');
+        }
+
+        // Add click event listener to the button
+        sendMessageBtn.addEventListener('click', sendMessageToIframe);
+
+        // Receive message from iframe
+        window.addEventListener('message', (event) => {
+            console.log('parent: Got message', event);
+        });
+    </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ app.registerExtension({
 			// Determine the target origin
 			const targetOrigin = event.origin !== "null" && event.origin !== "" ? event.origin : "*";
 			
-			const json = JSON.stringify(app.graph.serialize(), null, 2); // convert the data to a JSON string
+			const json = app.graph.serialize();
             // Send response back to parent
             event.source.postMessage(json, targetOrigin);
         });

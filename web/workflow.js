@@ -22,10 +22,10 @@ app.registerExtension({
 
 			// Determine the target origin
 			const targetOrigin = event.origin !== "null" && event.origin !== "" ? event.origin : "*";
-
-			const customWorkflow = await getWorkflow();
+			
+			const json = JSON.stringify(app.graph.serialize(), null, 2); // convert the data to a JSON string
             // Send response back to parent
-            event.source.postMessage(customWorkflow, targetOrigin);
+            event.source.postMessage(json, targetOrigin);
         });
 
         const customWorkflow = await getWorkflow();

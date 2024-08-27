@@ -26,7 +26,8 @@ app.registerExtension({
 			if (event.data == "runcomfy.get_current_workflow") {
 				const json = app.graph.serialize();
 				// Send response back to parent
-				event.source.postMessage(json, targetOrigin);
+				// wrap this json into a json object {event: "runcomfy.get_current_workflow", data: json}
+				event.source.postMessage({type:"workflow", event: "runcomfy.get_current_workflow", data: json}, targetOrigin);
 			}
         });
 

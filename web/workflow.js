@@ -22,10 +22,12 @@ app.registerExtension({
 
 			// Determine the target origin
 			const targetOrigin = event.origin !== "null" && event.origin !== "" ? event.origin : "*";
-			
-			const json = app.graph.serialize();
-            // Send response back to parent
-            event.source.postMessage(json, targetOrigin);
+			// if the event data is runcomfy.get_current_workflow, then send the graph data back to the parent
+			if (event.data == "runcomfy.get_current_workflow") {
+				const json = app.graph.serialize();
+				// Send response back to parent
+				event.source.postMessage(json, targetOrigin);
+			}
         });
 
         const customWorkflow = await getWorkflow();

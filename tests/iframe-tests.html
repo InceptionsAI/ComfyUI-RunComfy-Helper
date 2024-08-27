@@ -22,7 +22,7 @@
         // Function to send message to iframe
         function sendMessageToIframe() {
             console.log("parent: Sending message")
-            iframe.contentWindow.postMessage('Hello from parent!', '*');
+            iframe.contentWindow.postMessage('runcomfy.get_current_workflow', '*');
         }
 
         // Add click event listener to the button

@@ -14,9 +14,21 @@ async function getWorkflow(name) {
 		return null;
 	}
 }
+
+function hasPreloadedWorkflow() {
+	var loaded = localStorage.getItem('runcomfy.has_preloaded_workflow');
+	if (loaded) {
+		return true
+	} else {
+		localStorage.setItem('runcomfy.has_preloaded_workflow', true);
+		return false
+	}
+}
+
 app.registerExtension({
 	name: "runcomfy.Workflows",
 	async setup() {
+		console.log('in setup');
 		window.addEventListener('message', async (event) => {
             console.log('iframe: Message from parent', event);
 
@@ -30,15 +42,18 @@ app.registerExtension({
 				event.source.postMessage({type:"workflow", event: "runcomfy.get_current_workflow", data: json}, targetOrigin);
 			}
         });
+		if(!hasPreloadedWorkflow()) {
+			console.log('load workflow');
 
-        const customWorkflow = await getWorkflow();
-        if (customWorkflow === null) {
-            console.log("Workflow not found");
-            return;
-        }
-        await app.loadGraphData(customWorkflow);
+			const customWorkflow = await getWorkflow();
+			if (customWorkflow === null) {
+				console.log("Workflow not found");
+				return;
+			}
+			await app.loadGraphData(customWorkflow);
 
-        console.log("Custom workflow loaded by runcomfy.Workflows extension");
-
+			console.log("Custom workflow loaded by runcomfy.Workflows extension");
+		}
 	}
+
 });

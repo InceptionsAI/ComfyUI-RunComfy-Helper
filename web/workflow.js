@@ -37,10 +37,10 @@ app.registerExtension({
 				const json = app.graph.serialize();
 				// Send response back to parent
 				// wrap this json into a json object {event: "runcomfy.get_current_workflow", data: json}
-				event.source.postMessage({type:"workflow", event: "runcomfy.get_current_workflow", data: json}, targetOrigin);
+				event.source.postMessage({ type: "workflow", event: "runcomfy.get_current_workflow", data: json }, targetOrigin);
 			}
-        });
-		if(!hasPreloadedWorkflow()) {
+		});
+		if (!hasPreloadedWorkflow()) {
 			const customWorkflow = await getWorkflow();
 			if (customWorkflow === null) {
 				return;

@@ -35,6 +35,7 @@ app.registerExtension({
 			// if the event data is runcomfy.get_current_workflow, then send the graph data back to the parent
 			if (event.data == "runcomfy.get_current_workflow") {
 				const json = app.graph.serialize();
+				console.log("helper got workflow", json)
 				// Send response back to parent
 				// wrap this json into a json object {event: "runcomfy.get_current_workflow", data: json}
 				event.source.postMessage({ type: "workflow", event: "runcomfy.get_current_workflow", data: json }, targetOrigin);

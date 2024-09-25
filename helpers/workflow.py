@@ -5,14 +5,21 @@ import inspect
 import json
 import importlib
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-import utils
+import importlib.util
+
+# Get the path to utils.py
+utils_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'utils.py')
+
+# Load the module from the specified file
+spec = importlib.util.spec_from_file_location("my_utils", utils_path)
+my_utils = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(my_utils)
 
 root_directory = os.path.dirname(inspect.getfile(PromptServer))
-workflows_directory = utils.get_config_value(
+workflows_directory = my_utils.get_config_value(
     "workflows.directory", "runcomfy/workflows")
 workflows_directory = os.path.join(root_directory, workflows_directory)
-default_workflow = utils.get_config_value(
+default_workflow = my_utils.get_config_value(
     "workflows.default", "default.json")
 
 NODE_CLASS_MAPPINGS = {}
@@ -30,7 +37,7 @@ async def get_workflows(request):
         return web.Response(status=403)
     
     if not os.path.exists(file):
-        utils.log(f"Workflow {name} not found", type="WARNING")
+        my_utils.log(f"Workflow {name} not found", type="WARNING")
         # Find the most recent updated file in the workflows_directory
         files = os.listdir(workflows_directory)
         files = [os.path.join(workflows_directory, file) for file in files]

@@ -6,7 +6,7 @@ import json
 import importlib
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from .. import utils
+import utils
 
 root_directory = os.path.dirname(inspect.getfile(PromptServer))
 workflows_directory = utils.get_config_value(

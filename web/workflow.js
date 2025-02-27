@@ -46,7 +46,7 @@ app.registerExtension({
 				return;
 			}
 			await app.loadGraphData(customWorkflow);
-		    localStorage.setItem('runcomfy.has_preloaded_workflow', true);
+			localStorage.setItem('runcomfy.has_preloaded_workflow', true);
 
 			console.log("Custom workflow loaded by runcomfy.Workflows extension");
 		}

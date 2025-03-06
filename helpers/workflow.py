@@ -39,6 +39,8 @@ async def get_workflows(request):
     if not os.path.exists(file):
         my_utils.log(f"Workflow {name} not found", type="WARNING")
         # Find the most recent updated file in the workflows_directory
+        if not os.path.exists(workflows_directory):
+            return web.Response(status=404)
         files = os.listdir(workflows_directory)
         files = [os.path.join(workflows_directory, file) for file in files]
         files = [file for file in files if os.path.isfile(file)]

@@ -13,12 +13,24 @@ def parse_requirements(requirements):
     return {Requirement(line).name: Requirement(line) for line in requirements if line.strip()}
 
 
-def install_package(package):
+def install_package(package, upgrade=False):
     try:
         print(f"Installing package: {package}")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        if not upgrade:
+            command = [sys.executable, "-m", "pip", "install", package]
+        else:
+            command = [sys.executable, "-m", "pip", "install", "--upgrade", package]
+        subprocess.check_call(command)
     except subprocess.CalledProcessError as error:
         print(f"Failed to install package {package}: {error}")
+
+
+def ensure_transformers():
+    try:
+        from transformers import CLIPTokenizer
+    except ImportError as error:
+        install_package("transformers", upgrade=True)
+        restart()
 
 
 def ensure_required_packages():
@@ -36,7 +48,24 @@ def ensure_required_packages():
                 install_package(str(package_requirement))
 
 
+def restart():
+    sys_argv = sys.argv.copy()
+
+    if sys_argv[0].endswith("__main__.py"):
+        module_name = os.path.basename(os.path.dirname(sys_argv[0]))
+        cmds = [sys.executable, "-m", module_name] + sys_argv[1:]
+
+    elif sys.platform.startswith("win32"):
+        cmds = ['"' + sys.executable + '"', '"' + sys_argv[0] + '"'] + sys_argv[1:]
+
+    else:
+        cmds = [sys.executable] + sys_argv
+
+    os.execv(sys.executable, cmds)
+
+
 def main():
+    ensure_transformers()
     ensure_required_packages()
 
 

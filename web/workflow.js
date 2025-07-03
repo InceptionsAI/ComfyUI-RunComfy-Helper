@@ -76,6 +76,7 @@ app.registerExtension({
             }
         });
 
+        // Auto-load default workflow on extension startup
         if (!hasPreloadedWorkflow()) {
             // Check if workflow is already loaded or being loaded
             if (hasActiveWorkflow()) {

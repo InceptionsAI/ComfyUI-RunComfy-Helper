@@ -32,6 +32,7 @@ function hasActiveWorkflow() {
 let isSuccessfullyLoaded = false;
 let lastSuccessfulLoadTime = 0;
 
+// backup original function
 const originalLoadGraphData = app.loadGraphData;
 app.loadGraphData = function (graph) {
     const incomingNodeCount = graph?.nodes?.length || 0;
@@ -75,7 +76,6 @@ app.registerExtension({
             }
         });
 
-        // NEW: Add timing protection and workflow detection
         if (!hasPreloadedWorkflow()) {
             // Check if workflow is already loaded or being loaded
             if (hasActiveWorkflow()) {

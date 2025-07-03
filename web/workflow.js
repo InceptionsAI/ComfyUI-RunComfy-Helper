@@ -30,26 +30,30 @@ function hasActiveWorkflow() {
 }
 
 let isSuccessfullyLoaded = false;
-
+let lastSuccessfulLoadTime = 0;
 
 const originalLoadGraphData = app.loadGraphData;
 app.loadGraphData = function (graph) {
-    const nodeCount = graph?.nodes?.length || 0;
+    const incomingNodeCount = graph?.nodes?.length || 0;
     const currentNodeCount = app.graph?.nodes?.length || 0;
+    const now = Date.now();
 
     // status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
-    const loadEmptyWorkflow = nodeCount === 0;
-    const hasExistingWorkflow = currentNodeCount > 0;
-    const isLikelyRgthreeFix = loadEmptyWorkflow && hasExistingWorkflow && isSuccessfullyLoaded;
+    const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1000;
+    const isRgthreeOverride = incomingNodeCount === 0 &&
+        currentNodeCount > 0 &&
+        isSuccessfullyLoaded &&
+        isRgthreeAutoFix;
 
-    if (isLikelyRgthreeFix) {
+    if (isRgthreeOverride) {
         console.log("[RunComfy] Prevented empty workflow override caused by rgthree link-fixer");
         return Promise.resolve();
     }
 
     // Track successful loads
-    if (nodeCount > 0) {
+    if (incomingNodeCount > 0) {
         isSuccessfullyLoaded = true;
+        lastSuccessfulLoadTime = now;
     }
 
     return originalLoadGraphData.apply(this, arguments);

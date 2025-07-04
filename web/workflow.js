@@ -24,7 +24,7 @@ function hasPreloadedWorkflow() {
 	}
 }
 
-// Simple version comparison function
+// ComfyUI version comparison helper function
 function compareVersions(version1, version2) {
 	const v1parts = version1.split('.').map(Number);
 	const v2parts = version2.split('.').map(Number);
@@ -39,10 +39,9 @@ function compareVersions(version1, version2) {
 	return 0;
 }
 
-// Apply rgthree workaround only for ComfyUI version >= 1.23.1
+// Apply rgthree workaround only for ComfyUI version >= x.x.x
 const frontendVersion = window.__COMFYUI_FRONTEND_VERSION__;
 const useRgthreeWorkaround = frontendVersion && compareVersions(frontendVersion, "1.20.1") >= 0;
-
 console.log(`[RunComfy] Frontend version: ${frontendVersion || 'unknown'}, using ${useRgthreeWorkaround ? 'rgthree workaround' : 'original implementation'}`);
 
 if (useRgthreeWorkaround) {

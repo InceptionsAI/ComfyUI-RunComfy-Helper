@@ -39,12 +39,20 @@ function compareVersions(version1, version2) {
 	return 0;
 }
 
-// Apply rgthree workaround only for ComfyUI version >= x.x.x
-const frontendVersion = window.__COMFYUI_FRONTEND_VERSION__;
-const useRgthreeWorkaround = frontendVersion && compareVersions(frontendVersion, "1.20.1") >= 0;
-console.log(`[RunComfy] Frontend version: ${frontendVersion || 'unknown'}, using ${useRgthreeWorkaround ? 'rgthree workaround' : 'original implementation'}`);
+// Get ComfyUI backend version
+async function checkComfyVersion() {
+	try {
+		const response = await api.fetchApi('/api/system_stats');
+		const data = await response.json();
+		return data.system.comfyui_version;
+	} catch (error) {
+		console.log('[RunComfy] Could not get backend version');
+		return null;
+	}
+}
 
-if (useRgthreeWorkaround) {
+// Apply rgthree workaround to prevent empty workflow override
+function applyRgthreeWorkaround() {
 	let isSuccessfullyLoaded = false;
 	let lastSuccessfulLoadTime = 0;
 
@@ -56,7 +64,7 @@ if (useRgthreeWorkaround) {
 		const now = Date.now();
 
 		// status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
-		const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1000;
+		const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1500;
 		const isRgthreeOverride = incomingNodeCount === 0 &&
 			currentNodeCount > 0 &&
 			isSuccessfullyLoaded &&
@@ -77,9 +85,19 @@ if (useRgthreeWorkaround) {
 	};
 }
 
+
+
 app.registerExtension({
 	name: "runcomfy.Workflows",
 	async setup() {
+		// Check backend version and apply rgthree workaround if needed
+		const comfyVersion = await checkComfyVersion();
+		const needRgthreeWorkaround = comfyVersion && compareVersions(comfyVersion, "0.3.41") >= 0;
+		console.log(`[RunComfy] Backend version: ${comfyVersion || 'unknown'}, using ${needRgthreeWorkaround ? 'rgthree workaround' : 'original implementation'}`);
+		if (needRgthreeWorkaround) {
+			applyRgthreeWorkaround();
+		}
+
 		window.addEventListener('message', async (event) => {
 			// Determine the target origin
 			const targetOrigin = event.origin !== "null" && event.origin !== "" ? event.origin : "*";

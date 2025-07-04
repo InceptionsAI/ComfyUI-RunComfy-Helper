@@ -24,41 +24,59 @@ function hasPreloadedWorkflow() {
 	}
 }
 
-// Check if non-empty workflow is already loaded
-function hasActiveWorkflow() {
-	return app.graph && app.graph.nodes && app.graph.nodes.length > 0;
+// Simple version comparison function
+function compareVersions(version1, version2) {
+	const v1parts = version1.split('.').map(Number);
+	const v2parts = version2.split('.').map(Number);
+
+	for (let i = 0; i < Math.max(v1parts.length, v2parts.length); i++) {
+		const v1part = v1parts[i] || 0;
+		const v2part = v2parts[i] || 0;
+
+		if (v1part > v2part) return 1;
+		if (v1part < v2part) return -1;
+	}
+	return 0;
 }
 
-let isSuccessfullyLoaded = false;
-let lastSuccessfulLoadTime = 0;
+// Apply rgthree workaround only for ComfyUI version >= 1.23.1
+const frontendVersion = window.__COMFYUI_FRONTEND_VERSION__;
+const useRgthreeWorkaround = frontendVersion && compareVersions(frontendVersion, "1.20.1") >= 0;
 
-// backup original function
-const originalLoadGraphData = app.loadGraphData;
-app.loadGraphData = function (graph) {
-	const incomingNodeCount = graph?.nodes?.length || 0;
-	const currentNodeCount = app.graph?.nodes?.length || 0;
-	const now = Date.now();
+console.log(`[RunComfy] Frontend version: ${frontendVersion || 'unknown'}, using ${useRgthreeWorkaround ? 'rgthree workaround' : 'original implementation'}`);
 
-	// status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
-	const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1000;
-	const isRgthreeOverride = incomingNodeCount === 0 &&
-		currentNodeCount > 0 &&
-		isSuccessfullyLoaded &&
-		isRgthreeAutoFix;
+if (useRgthreeWorkaround) {
+	let isSuccessfullyLoaded = false;
+	let lastSuccessfulLoadTime = 0;
 
-	if (isRgthreeOverride) {
-		console.log("[RunComfy] Prevented empty workflow override caused by rgthree link-fixer");
-		return Promise.resolve();
-	}
+	// backup original function
+	const originalLoadGraphData = app.loadGraphData;
+	app.loadGraphData = function (graph) {
+		const incomingNodeCount = graph?.nodes?.length || 0;
+		const currentNodeCount = app.graph?.nodes?.length || 0;
+		const now = Date.now();
 
-	// Track successful loads
-	if (incomingNodeCount > 0) {
-		isSuccessfullyLoaded = true;
-		lastSuccessfulLoadTime = now;
-	}
+		// status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
+		const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1000;
+		const isRgthreeOverride = incomingNodeCount === 0 &&
+			currentNodeCount > 0 &&
+			isSuccessfullyLoaded &&
+			isRgthreeAutoFix;
 
-	return originalLoadGraphData.apply(this, arguments);
-};
+		if (isRgthreeOverride) {
+			console.log("[RunComfy] Prevented empty workflow override caused by rgthree link-fixer");
+			return Promise.resolve();
+		}
+
+		// Track successful loads
+		if (incomingNodeCount > 0) {
+			isSuccessfullyLoaded = true;
+			lastSuccessfulLoadTime = now;
+		}
+
+		return originalLoadGraphData.apply(this, arguments);
+	};
+}
 
 app.registerExtension({
 	name: "runcomfy.Workflows",
@@ -76,29 +94,14 @@ app.registerExtension({
 			}
 		});
 
-		// Auto-load default workflow on extension startup
 		if (!hasPreloadedWorkflow()) {
-			// Check if workflow is already loaded or being loaded
-			if (hasActiveWorkflow()) {
-				console.log("[RunComfy] Existing workflow detected, skipping auto-load");
-				localStorage.setItem('runcomfy.has_preloaded_workflow', true);
-				return;
-			}
-
 			const customWorkflow = await getWorkflow();
 			if (customWorkflow === null) {
 				return;
 			}
-
-			if (!hasActiveWorkflow()) {
-				try {
-					await app.loadGraphData(customWorkflow);
-					localStorage.setItem('runcomfy.has_preloaded_workflow', true);
-					console.log("Custom workflow loaded by runcomfy.Workflows extension");
-				} catch (error) {
-					console.error("[RunComfy] Failed to load custom workflow:", error);
-				}
-			}
+			await app.loadGraphData(customWorkflow);
+			localStorage.setItem('runcomfy.has_preloaded_workflow', true);
+			console.log("Custom workflow loaded by runcomfy.Workflows extension");
 		}
 	}
 

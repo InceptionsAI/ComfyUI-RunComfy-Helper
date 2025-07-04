@@ -36,8 +36,8 @@ function applyRgthreeWorkaround() {
 		const currentNodeCount = app.graph?.nodes?.length || 0;
 		const now = Date.now();
 
-		// Check if current workflow has rgthree nodes
-		const isRgthreeLoading = app.graph?.nodes?.some(node =>
+		// Check if incoming workflow has rgthree nodes
+		const isRgthreeLoading = graph?.nodes?.some(node =>
 			node.type && node.type.includes('(rgthree)')
 		) || false;
 

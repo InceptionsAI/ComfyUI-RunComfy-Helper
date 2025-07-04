@@ -24,33 +24,6 @@ function hasPreloadedWorkflow() {
 	}
 }
 
-// ComfyUI version comparison helper function
-function version1Bigger(version1, version2) {
-	const v1parts = version1.split('.').map(Number);
-	const v2parts = version2.split('.').map(Number);
-
-	for (let i = 0; i < Math.max(v1parts.length, v2parts.length); i++) {
-		const v1part = v1parts[i] || 0;
-		const v2part = v2parts[i] || 0;
-
-		if (v1part > v2part) return 1;
-		if (v1part < v2part) return -1;
-	}
-	return 0;
-}
-
-// Get ComfyUI backend version
-async function checkComfyVersion() {
-	try {
-		const response = await api.fetchApi('/api/system_stats');
-		const data = await response.json();
-		return data.system.comfyui_version;
-	} catch (error) {
-		console.log('[RunComfy] Could not get backend version');
-		return null;
-	}
-}
-
 // Apply rgthree workaround to prevent empty workflow override
 function applyRgthreeWorkaround() {
 	let isSuccessfullyLoaded = false;
@@ -63,12 +36,21 @@ function applyRgthreeWorkaround() {
 		const currentNodeCount = app.graph?.nodes?.length || 0;
 		const now = Date.now();
 
+		// Check if current workflow has rgthree nodes
+		const isRgthreeLoading = app.graph?.nodes?.some(node =>
+			node.type && node.type.includes('(rgthree)')
+		) || false;
+
+		if (isRgthreeLoading) {
+			console.log("[RunComfy] Rgthree is loading");
+		}
 		// status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
 		const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1500;
 		const isRgthreeOverride = incomingNodeCount === 0 &&
 			currentNodeCount > 0 &&
 			isSuccessfullyLoaded &&
-			isRgthreeAutoFix;
+			isRgthreeAutoFix &&
+			isRgthreeLoading;
 
 		if (isRgthreeOverride) {
 			console.log("[RunComfy] Prevented empty workflow override caused by rgthree link-fixer");
@@ -90,13 +72,8 @@ function applyRgthreeWorkaround() {
 app.registerExtension({
 	name: "runcomfy.Workflows",
 	async setup() {
-		// Check backend version and apply rgthree workaround if needed
-		const comfyVersion = await checkComfyVersion();
-		const needRgthreeWorkaround = comfyVersion && version1Bigger(comfyVersion, "0.3.39") >= 0;
-		console.log(`[RunComfy] Backend version: ${comfyVersion || 'unknown'}, using ${needRgthreeWorkaround ? 'rgthree workaround' : 'original implementation'}`);
-		if (needRgthreeWorkaround) {
-			applyRgthreeWorkaround();
-		}
+		// Apply rgthree workaround (only activates when rgthree nodes are present)
+		applyRgthreeWorkaround();
 
 		window.addEventListener('message', async (event) => {
 			// Determine the target origin

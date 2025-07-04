@@ -25,7 +25,7 @@ function hasPreloadedWorkflow() {
 }
 
 // ComfyUI version comparison helper function
-function compareVersions(version1, version2) {
+function version1Bigger(version1, version2) {
 	const v1parts = version1.split('.').map(Number);
 	const v2parts = version2.split('.').map(Number);
 
@@ -92,7 +92,7 @@ app.registerExtension({
 	async setup() {
 		// Check backend version and apply rgthree workaround if needed
 		const comfyVersion = await checkComfyVersion();
-		const needRgthreeWorkaround = comfyVersion && compareVersions(comfyVersion, "0.3.41") >= 0;
+		const needRgthreeWorkaround = comfyVersion && version1Bigger(comfyVersion, "0.3.39") >= 0;
 		console.log(`[RunComfy] Backend version: ${comfyVersion || 'unknown'}, using ${needRgthreeWorkaround ? 'rgthree workaround' : 'original implementation'}`);
 		if (needRgthreeWorkaround) {
 			applyRgthreeWorkaround();

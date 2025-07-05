@@ -28,6 +28,7 @@ function hasPreloadedWorkflow() {
 function applyRgthreeWorkaround() {
 	let isSuccessfullyLoaded = false;
 	let lastSuccessfulLoadTime = 0;
+	let isRgthreeLoaded = false;  // Whether current workflow has rgthree nodes
 
 	// backup original function
 	const originalLoadGraphData = app.loadGraphData;
@@ -46,11 +47,9 @@ function applyRgthreeWorkaround() {
 		}
 		// status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
 		const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1500;
-		const isRgthreeOverride = incomingNodeCount === 0 &&
-			currentNodeCount > 0 &&
-			isSuccessfullyLoaded &&
-			isRgthreeAutoFix &&
-			isRgthreeLoading;
+		const isRgthreeOverride = incomingNodeCount === 0 && currentNodeCount > 0 &&
+			isSuccessfullyLoaded && isRgthreeAutoFix &&
+			isRgthreeLoaded;  // Current workflow has rgthree nodes
 
 		if (isRgthreeOverride) {
 			console.log("[RunComfy] Prevented empty workflow override caused by rgthree link-fixer");
@@ -61,6 +60,7 @@ function applyRgthreeWorkaround() {
 		if (incomingNodeCount > 0) {
 			isSuccessfullyLoaded = true;
 			lastSuccessfulLoadTime = now;
+			isRgthreeLoaded = isRgthreeLoading;  // Update current workflow rgthree status
 		}
 
 		return originalLoadGraphData.apply(this, arguments);

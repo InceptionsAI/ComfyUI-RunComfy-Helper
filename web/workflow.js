@@ -71,7 +71,7 @@ function applyRgthreeWorkaround() {
 
 app.registerExtension({
 	name: "runcomfy.Workflows",
-	async setup() {
+	async init() {
 		// Apply rgthree workaround (only activates when rgthree nodes are present)
 		// applyRgthreeWorkaround();
 

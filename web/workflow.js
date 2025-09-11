@@ -73,7 +73,7 @@ app.registerExtension({
 	name: "runcomfy.Workflows",
 	async setup() {
 		// Apply rgthree workaround (only activates when rgthree nodes are present)
-		applyRgthreeWorkaround();
+		// applyRgthreeWorkaround();
 
 		window.addEventListener('message', async (event) => {
 			// Determine the target origin
@@ -93,10 +93,10 @@ app.registerExtension({
 			if (customWorkflow === null) {
 				return;
 			}
-			await app.loadGraphData(customWorkflow);
+			localStorage.setItem('workflow', JSON.stringify(customWorkflow));
 			localStorage.setItem('runcomfy.has_preloaded_workflow', true);
 			console.log("Custom workflow loaded by runcomfy.Workflows extension");
 		}
 	}
 
-}); 
+});

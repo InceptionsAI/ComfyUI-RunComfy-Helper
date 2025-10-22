@@ -1,0 +1,14 @@
+[project]
+name = "runcomfy-helper"
+description = "Helper nodes for [a/RunComfy](https://www.runcomfy.com)"
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/InceptionsAI/ComfyUI-RunComfy-Helper"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-RunComfy-Helper"
+Icon = ""

@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import logging
 
 import folder_paths
 from packaging.requirements import Requirement
@@ -64,9 +65,42 @@ def restart():
     os.execv(sys.executable, cmds)
 
 
+def apply_runcomfy_api_interceptor():
+    """
+    Apply the RunComfy API interceptor to redirect ComfyUI core API node calls
+    to api.runcomfy.net with RUNCOMFY_API_TOKEN authorization.
+    """
+    try:
+        # Import and apply the API interceptor
+        import importlib.util
+        
+        # Get the path to api_interceptor.py
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        interceptor_path = os.path.join(current_dir, 'helpers', 'api_interceptor.py')
+        
+        if not os.path.exists(interceptor_path):
+            logging.warning(f"[RunComfy] API interceptor not found at {interceptor_path}")
+            return
+        
+        # Load the module
+        spec = importlib.util.spec_from_file_location("api_interceptor", interceptor_path)
+        api_interceptor = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(api_interceptor)
+        
+        # Apply the full interceptor
+        api_interceptor.apply_full_api_interceptor()
+        
+    except Exception as e:
+        logging.warning(f"[RunComfy] Failed to apply API interceptor during prestartup: {e}")
+        # Don't raise - allow ComfyUI to continue starting even if interceptor fails
+
+
 def main():
     ensure_transformers()
     ensure_required_packages()
+    
+    # Apply the RunComfy API interceptor to redirect API calls
+    apply_runcomfy_api_interceptor()
 
 
 main()

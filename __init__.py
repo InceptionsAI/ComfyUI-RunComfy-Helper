@@ -4,6 +4,15 @@ import os
 import sys
 from .utils import get_ext_dir
 
+# Apply API interceptor as early as possible during node loading
+# This ensures that even if prestartup_script didn't run, the interceptor is applied
+try:
+    from .helpers.api_interceptor import apply_full_api_interceptor
+    apply_full_api_interceptor()
+except Exception as e:
+    import logging
+    logging.debug(f"[RunComfy] Could not apply API interceptor during __init__: {e}")
+
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 

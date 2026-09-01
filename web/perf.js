@@ -22,7 +22,65 @@ function agg(entries, match) {
 	};
 }
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// Double rAF: resolves after the next frame is actually painted.
+const doublePaint = () => new Promise((resolve) =>
+	requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
 let graphConfiguredMs = null;
+let resolveGraphConfigured;
+const graphConfigured = new Promise((resolve) => { resolveGraphConfigured = resolve; });
+
+async function measureAndReport(setupMs) {
+	// On newer frontends the initial workflow is configured asynchronously
+	// after setup(), so wait (bounded) for that signal before reporting.
+	await Promise.race([graphConfigured, delay(10000)]);
+
+	// Wait until a frame after both signals is painted. rAF never fires in a
+	// hidden/background tab, so race it against a timeout fallback and record
+	// which path fired.
+	const painted = await Promise.race([
+		doublePaint().then(() => true),
+		delay(3000).then(() => false),
+	]);
+
+	// On the fallback paths, fall back to the readiness timestamps so the
+	// fallback delays themselves are not counted.
+	const canvasReadyMs = painted && graphConfiguredMs !== null
+		? Math.round(performance.now())
+		: Math.max(setupMs, graphConfiguredMs ?? 0);
+
+	const nav = performance.getEntriesByType("navigation")[0];
+	const res = performance.getEntriesByType("resource");
+
+	const payload = {
+		canvas_ready_ms: canvasReadyMs,
+		setup_ms: setupMs,
+		graph_configured_ms: graphConfiguredMs,
+		painted: painted,
+		visibility: document.visibilityState,
+		ttfb_ms: nav ? Math.round(nav.responseStart) : null,
+		html_ms: nav ? Math.round(nav.responseEnd) : null,
+		dom_content_loaded_ms: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
+		// Node definitions JSON, usually the biggest single item
+		object_info: agg(res, (n) => n.includes("/object_info")),
+		// Frontend JS/CSS bundles from comfyui_frontend_package
+		bundles: agg(res, (n) => n.includes("/assets/")),
+		// Custom node web extensions
+		node_extensions: agg(res, (n) => n.includes("/extensions/")),
+		api_misc: agg(res, (n) => /\/api\/(settings|userdata|users|i18n)/.test(n)),
+		templates: agg(res, (n) => n.includes("/templates")),
+		resources_total: agg(res, () => true),
+		page: location.pathname,
+	};
+
+	console.log("[RunComfy] frontend load", payload);
+	api.fetchApi("/runcomfy/perf", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(payload),
+	}).catch((e) => console.warn("[RunComfy] perf beacon failed", e));
+}
 
 app.registerExtension({
 	name: "runcomfy.Perf",
@@ -30,57 +88,15 @@ app.registerExtension({
 		// First workflow actually loaded into the canvas
 		if (graphConfiguredMs === null) {
 			graphConfiguredMs = Math.round(performance.now());
+			resolveGraphConfigured();
 		}
 	},
 	setup() {
 		// setup() runs at the end of app startup: canvas created, node types
-		// registered, initial workflow loaded. Double rAF waits until the
-		// first frame after that is actually painted. performance.now() is
-		// relative to navigation start, so it directly measures
-		// "browser navigates -> canvas visible".
-		// rAF never fires in a hidden/background tab, so race it against a
-		// timeout fallback and record whether the frame was actually painted.
-		// On the fallback path, use the time setup() was entered so the
-		// fallback delay itself is not counted.
-		const setupMs = Math.round(performance.now());
-		let reported = false;
-		const report = (painted) => {
-			if (reported) return;
-			reported = true;
-			const canvasReadyMs = painted ? Math.round(performance.now()) : setupMs;
-			const nav = performance.getEntriesByType("navigation")[0];
-			const res = performance.getEntriesByType("resource");
-
-			const payload = {
-				canvas_ready_ms: canvasReadyMs,
-				setup_ms: setupMs,
-				graph_configured_ms: graphConfiguredMs,
-				painted: painted,
-				visibility: document.visibilityState,
-				ttfb_ms: nav ? Math.round(nav.responseStart) : null,
-				html_ms: nav ? Math.round(nav.responseEnd) : null,
-				dom_content_loaded_ms: nav ? Math.round(nav.domContentLoadedEventEnd) : null,
-				// Node definitions JSON, usually the biggest single item
-				object_info: agg(res, (n) => n.includes("/object_info")),
-				// Frontend JS/CSS bundles from comfyui_frontend_package
-				bundles: agg(res, (n) => n.includes("/assets/")),
-				// Custom node web extensions
-				node_extensions: agg(res, (n) => n.includes("/extensions/")),
-				api_misc: agg(res, (n) => /\/api\/(settings|userdata|users|i18n)/.test(n)),
-				templates: agg(res, (n) => n.includes("/templates")),
-				resources_total: agg(res, () => true),
-				page: location.pathname,
-			};
-
-			console.log("[RunComfy] frontend load", payload);
-			api.fetchApi("/runcomfy/perf", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
-			}).catch((e) => console.warn("[RunComfy] perf beacon failed", e));
-		};
-
-		requestAnimationFrame(() => requestAnimationFrame(() => report(true)));
-		setTimeout(() => report(false), 3000);
+		// registered. performance.now() is relative to navigation start, so it
+		// directly measures "browser navigates -> canvas ready". Deliberately
+		// not awaited: the app may await setup hooks, and the measurement
+		// waits for signals that can arrive after them.
+		measureAndReport(Math.round(performance.now()));
 	},
 });

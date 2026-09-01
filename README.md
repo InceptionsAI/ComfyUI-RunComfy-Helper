@@ -18,10 +18,11 @@
 `web/perf.js` measures the time from the browser starting to navigate until the
 ComfyUI canvas is ready (plus a breakdown: TTFB, JS bundles, `/object_info`,
 custom node extensions), and reports it to the server on every page load.
-Records are appended to `<comfyui>/runcomfy/perf/frontend_load.jsonl` (size-
-rotated, one previous generation kept) and logged to the server log.
+Each record is written to the ComfyUI server log as a single line:
 
-- Read recent records: `curl http://localhost:8188/runcomfy/perf?limit=50`
+```
+[RunComfy perf] frontend load: {"canvas_ready_ms": 1187, ...}
+```
 
 Key fields per record:
 - `canvas_ready_ms`: navigation start -> canvas ready (first painted frame

@@ -87,6 +87,9 @@ async def get_perf(request):
         limit = min(int(request.query.get("limit", 50)), MAX_LIMIT)
     except ValueError:
         return web.Response(status=400)
+    if limit < 1:
+        # limit=0 would make lines[-limit:] return everything
+        return web.Response(status=400)
 
     lines = read_tail_lines(perf_log_file, TAIL_READ_BYTES)
     if len(lines) < limit:

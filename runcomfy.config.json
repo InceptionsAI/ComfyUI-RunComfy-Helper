@@ -3,5 +3,8 @@
 		"directory": "runcomfy/workflows",
 		"default": "default.json"
 	},
+	"perf": {
+		"directory": "runcomfy/perf"
+	},
 	"logging":true
 }

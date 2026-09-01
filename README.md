@@ -14,12 +14,32 @@
              }
            ]
          }'
+## Frontend load time
+`web/perf.js` measures the time from the browser starting to navigate until the
+ComfyUI canvas is ready (plus a breakdown: TTFB, JS bundles, `/object_info`,
+custom node extensions), and reports it to the server on every page load.
+Records are appended to `<comfyui>/runcomfy/perf/frontend_load.jsonl` and
+printed to the server log.
+
+- Read recent records: `curl http://localhost:8188/runcomfy/perf?limit=50`
+
+Key fields per record:
+- `canvas_ready_ms`: navigation start -> canvas ready (first painted frame; if
+  the tab is hidden, `painted` is false and the value is the time app setup
+  finished)
+- `graph_configured_ms`: navigation start -> first workflow loaded into the canvas
+- `object_info` / `bundles` / `node_extensions`: `{count, span_ms, bytes, cached}`
+  per resource group; `cached: true` means served from the browser cache
+
 ## Config
 ```
 {
 	"workflows": {
 		"directory": "runcomfy/workflows",
 		"default": "default.json"
+	},
+	"perf": {
+		"directory": "runcomfy/perf"
 	},
 	"logging":true
 }

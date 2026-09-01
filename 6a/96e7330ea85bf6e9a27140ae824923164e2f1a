@@ -1,0 +1,19 @@
+helpers/perf.py
+  s_69730809f46fc9::t_ad3ce83115a20e 18-22,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6a96e7330ea85bf6e9a27140ae824923164e2f1a",
+  "prompts": {},
+  "sessions": {
+    "s_69730809f46fc9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a5ddff9-211a-4174-9396-136ff4b2d113",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

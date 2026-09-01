@@ -38,9 +38,6 @@ Key fields per record:
 		"directory": "runcomfy/workflows",
 		"default": "default.json"
 	},
-	"perf": {
-		"directory": "runcomfy/perf"
-	},
 	"logging":true
 }
 ```

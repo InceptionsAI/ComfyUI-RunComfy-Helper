@@ -64,26 +64,36 @@ async def save_perf(request):
     return web.json_response({"ok": True})
 
 
+def read_tail_lines(path, max_bytes):
+    # Read only a bounded tail of the file instead of the whole log
+    if not os.path.exists(path):
+        return []
+    with open(path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        size = f.tell()
+        f.seek(max(0, size - max_bytes))
+        chunk = f.read().decode("utf-8", errors="replace")
+
+    lines = chunk.splitlines()
+    if size > max_bytes and lines:
+        # The first line is likely partial after seeking into the middle
+        lines = lines[1:]
+    return lines
+
+
 @PromptServer.instance.routes.get("/runcomfy/perf")
 async def get_perf(request):
     try:
         limit = min(int(request.query.get("limit", 50)), MAX_LIMIT)
     except ValueError:
         return web.Response(status=400)
-    if not os.path.exists(perf_log_file):
-        return web.json_response([])
 
-    # Read only a bounded tail of the file instead of the whole log
-    with open(perf_log_file, "rb") as f:
-        f.seek(0, os.SEEK_END)
-        size = f.tell()
-        f.seek(max(0, size - TAIL_READ_BYTES))
-        chunk = f.read().decode("utf-8", errors="replace")
-
-    lines = chunk.splitlines()
-    if size > TAIL_READ_BYTES and lines:
-        # The first line is likely partial after seeking into the middle
-        lines = lines[1:]
+    lines = read_tail_lines(perf_log_file, TAIL_READ_BYTES)
+    if len(lines) < limit:
+        # Right after a rotation the current file is nearly empty and the
+        # recent records live in the previous generation
+        rotated = read_tail_lines(perf_log_file + ".1", TAIL_READ_BYTES)
+        lines = rotated[-(limit - len(lines)):] + lines
 
     records = []
     for line in lines[-limit:]:

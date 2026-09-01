@@ -15,8 +15,13 @@ NODE_DISPLAY_NAME_MAPPINGS = {}
 async def log_perf(request):
     if request.content_length and request.content_length > MAX_PAYLOAD_BYTES:
         return web.Response(status=413)
+    # content_length is None for chunked requests, so also enforce the cap
+    # while reading the body instead of buffering it whole
+    body = await request.content.read(MAX_PAYLOAD_BYTES + 1)
+    if len(body) > MAX_PAYLOAD_BYTES:
+        return web.Response(status=413)
     try:
-        data = await request.json()
+        data = json.loads(body)
     except Exception:
         return web.Response(status=400)
     if not isinstance(data, dict):

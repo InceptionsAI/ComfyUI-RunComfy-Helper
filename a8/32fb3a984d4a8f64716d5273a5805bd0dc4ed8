@@ -1,0 +1,31 @@
+web/perf.js
+  s_69730809f46fc9::t_9aa8ae5b8506d2 1-40,51-55,57,60-80,85-86
+  s_69730809f46fc9::t_9f10814f0da643 41-42,46-49
+  s_69730809f46fc9::t_20ba49192ad81b 43-45,50
+  s_69730809f46fc9::t_380eee60b813ae 58-59
+  s_69730809f46fc9::t_2a67a9d2529db8 81-84
+  s_69730809f46fc9::t_523bcd154dd39b 56
+README.md
+  s_69730809f46fc9::t_c21657020b6c4a 17-33,41-42
+  s_69730809f46fc9::t_46f1cc6b2a66d6 43
+helpers/perf.py
+  s_69730809f46fc9::t_de238e9d20e2d5 1-64
+runcomfy.config.json
+  s_69730809f46fc9::t_b1b0b2c6e07039 6-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a832fb3a984d4a8f64716d5273a5805bd0dc4ed8",
+  "prompts": {},
+  "sessions": {
+    "s_69730809f46fc9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a5ddff9-211a-4174-9396-136ff4b2d113",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

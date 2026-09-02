@@ -16,8 +16,14 @@ async def log_perf(request):
     if request.content_length and request.content_length > MAX_PAYLOAD_BYTES:
         return web.Response(status=413)
     # content_length is None for chunked requests, so also enforce the cap
-    # while reading the body instead of buffering it whole
-    body = await request.content.read(MAX_PAYLOAD_BYTES + 1)
+    # while reading the body instead of buffering it whole. read(n) can
+    # return fewer than n bytes before EOF, so loop until EOF or over-cap.
+    body = b""
+    while len(body) <= MAX_PAYLOAD_BYTES:
+        chunk = await request.content.read(MAX_PAYLOAD_BYTES + 1 - len(body))
+        if not chunk:
+            break
+        body += chunk
     if len(body) > MAX_PAYLOAD_BYTES:
         return web.Response(status=413)
     try:

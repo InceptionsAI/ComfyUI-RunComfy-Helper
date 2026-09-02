@@ -27,7 +27,9 @@ Each record is written to the ComfyUI server log as a single line:
 Key fields per record:
 - `canvas_ready_ms`: navigation start -> canvas ready (first painted frame
   after app setup finished and the initial workflow was loaded; if the tab is
-  hidden, `painted` is false and the value is when readiness was reached)
+  hidden, `painted` is false and the value is when readiness was reached).
+  `null` with `incomplete: true` means the workflow never finished loading
+  within 2 minutes — treat it as a failed/extremely slow load, not a fast one
 - `graph_configured_ms`: navigation start -> first workflow loaded into the canvas
 - `object_info` / `bundles` / `node_extensions`: `{count, span_ms, bytes, cached}`
   per resource group; `cached: true` means served from the browser cache

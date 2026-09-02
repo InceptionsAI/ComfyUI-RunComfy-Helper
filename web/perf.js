@@ -31,10 +31,19 @@ let graphConfiguredMs = null;
 let resolveGraphConfigured;
 const graphConfigured = new Promise((resolve) => { resolveGraphConfigured = resolve; });
 
+// How long to wait for the initial workflow configuration. Generous, so that
+// genuinely slow loads are still reported with their true readiness time;
+// only a load whose graph never configures at all becomes an incomplete
+// record, explicitly marked instead of under-reported as a fast load.
+const GRAPH_WAIT_MAX_MS = 120000;
+
 async function measureAndReport(setupMs) {
 	// On newer frontends the initial workflow is configured asynchronously
-	// after setup(), so wait (bounded) for that signal before reporting.
-	await Promise.race([graphConfigured, delay(10000)]);
+	// after setup(), so wait for that signal before reporting.
+	const graphArrived = await Promise.race([
+		graphConfigured.then(() => true),
+		delay(GRAPH_WAIT_MAX_MS).then(() => false),
+	]);
 
 	// Wait until a frame after both signals is painted. rAF never fires in a
 	// hidden/background tab, so race it against a timeout fallback and record
@@ -45,16 +54,22 @@ async function measureAndReport(setupMs) {
 	]);
 
 	// On the fallback paths, fall back to the readiness timestamps so the
-	// fallback delays themselves are not counted.
-	const canvasReadyMs = painted && graphConfiguredMs !== null
-		? Math.round(performance.now())
-		: Math.max(setupMs, graphConfiguredMs ?? 0);
+	// fallback delays themselves are not counted. An incomplete load gets
+	// null rather than a fake early value.
+	let canvasReadyMs = null;
+	if (graphArrived) {
+		canvasReadyMs = painted
+			? Math.round(performance.now())
+			: Math.max(setupMs, graphConfiguredMs);
+	}
 
 	const nav = performance.getEntriesByType("navigation")[0];
 	const res = performance.getEntriesByType("resource");
 
 	const payload = {
 		canvas_ready_ms: canvasReadyMs,
+		// true = the graph never configured within GRAPH_WAIT_MAX_MS
+		incomplete: !graphArrived,
 		setup_ms: setupMs,
 		graph_configured_ms: graphConfiguredMs,
 		painted: painted,

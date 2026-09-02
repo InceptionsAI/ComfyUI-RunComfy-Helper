@@ -27,52 +27,34 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const doublePaint = () => new Promise((resolve) =>
 	requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
+// How long to wait for the initial workflow configuration. Generous, so that
+// genuinely slow loads are still reported with their true readiness time. A
+// load that outlives this cap emits an explicit incomplete record, then a
+// late correction if the workflow does configure eventually; a page torn
+// down at any point is covered by the pagehide beacon below. All records of
+// one page load share load_id.
+const GRAPH_WAIT_MAX_MS = 300000;
+
+const loadId = (window.crypto?.randomUUID?.()) || Math.random().toString(36).slice(2);
+
 let graphConfiguredMs = null;
 let resolveGraphConfigured;
 const graphConfigured = new Promise((resolve) => { resolveGraphConfigured = resolve; });
 
-// How long to wait for the initial workflow configuration. Generous, so that
-// genuinely slow loads are still reported with their true readiness time;
-// only a load whose graph never configures at all becomes an incomplete
-// record, explicitly marked instead of under-reported as a fast load.
-const GRAPH_WAIT_MAX_MS = 120000;
+let setupMs = null;
+let finalReportSent = false;
 
-async function measureAndReport(setupMs) {
-	// On newer frontends the initial workflow is configured asynchronously
-	// after setup(), so wait for that signal before reporting.
-	const graphArrived = await Promise.race([
-		graphConfigured.then(() => true),
-		delay(GRAPH_WAIT_MAX_MS).then(() => false),
-	]);
-
-	// Wait until a frame after both signals is painted. rAF never fires in a
-	// hidden/background tab, so race it against a timeout fallback and record
-	// which path fired.
-	const painted = await Promise.race([
-		doublePaint().then(() => true),
-		delay(3000).then(() => false),
-	]);
-
-	// On the fallback paths, fall back to the readiness timestamps so the
-	// fallback delays themselves are not counted. An incomplete load gets
-	// null rather than a fake early value.
-	let canvasReadyMs = null;
-	if (graphArrived) {
-		canvasReadyMs = painted
-			? Math.round(performance.now())
-			: Math.max(setupMs, graphConfiguredMs);
-	}
-
+function buildPayload(fields) {
 	const nav = performance.getEntriesByType("navigation")[0];
 	const res = performance.getEntriesByType("resource");
-
-	const payload = {
-		canvas_ready_ms: canvasReadyMs,
-		// true = the graph never configured within GRAPH_WAIT_MAX_MS
-		incomplete: !graphArrived,
+	return {
+		load_id: loadId,
+		canvas_ready_ms: null,
+		// true = the workflow has not been configured (yet)
+		incomplete: graphConfiguredMs === null,
 		setup_ms: setupMs,
 		graph_configured_ms: graphConfiguredMs,
-		painted: painted,
+		painted: false,
 		visibility: document.visibilityState,
 		ttfb_ms: nav ? Math.round(nav.responseStart) : null,
 		html_ms: nav ? Math.round(nav.responseEnd) : null,
@@ -87,8 +69,11 @@ async function measureAndReport(setupMs) {
 		templates: agg(res, (n) => n.includes("/templates")),
 		resources_total: agg(res, () => true),
 		page: location.pathname,
+		...fields,
 	};
+}
 
+function send(payload) {
 	console.log("[RunComfy] frontend load", payload);
 	api.fetchApi("/runcomfy/perf", {
 		method: "POST",
@@ -96,6 +81,58 @@ async function measureAndReport(setupMs) {
 		body: JSON.stringify(payload),
 	}).catch((e) => console.warn("[RunComfy] perf beacon failed", e));
 }
+
+// The workflow is configured; wait for a painted frame and report the real
+// readiness time. rAF never fires in a hidden/background tab, so race it
+// against a timeout fallback; on the fallback path use the readiness
+// timestamps so the fallback delay itself is not counted.
+async function reportWhenReady(late) {
+	const painted = await Promise.race([
+		doublePaint().then(() => true),
+		delay(3000).then(() => false),
+	]);
+	const canvasReadyMs = painted
+		? Math.round(performance.now())
+		: Math.max(setupMs, graphConfiguredMs);
+	finalReportSent = true;
+	send(buildPayload({ canvas_ready_ms: canvasReadyMs, painted, late }));
+}
+
+async function measureAndReport() {
+	// On newer frontends the initial workflow is configured asynchronously
+	// after setup(), so wait for that signal before reporting.
+	const graphArrived = await Promise.race([
+		graphConfigured.then(() => true),
+		delay(GRAPH_WAIT_MAX_MS).then(() => false),
+	]);
+	if (graphArrived) {
+		await reportWhenReady(false);
+		return;
+	}
+	// Emit an explicit incomplete record instead of under-reporting the
+	// load as fast, then a correction if the workflow configures later.
+	send(buildPayload({}));
+	graphConfigured.then(() => reportWhenReady(true));
+}
+
+// Last-resort beacon: a page torn down (refresh, close, navigation) before
+// the final record was sent still reports how long the user waited.
+// sendBeacon survives page teardown; fetch would be cancelled with the page.
+window.addEventListener("pagehide", () => {
+	if (finalReportSent) return;
+	const payload = buildPayload({
+		abandoned: true,
+		abandoned_ms: Math.round(performance.now()),
+	});
+	try {
+		navigator.sendBeacon(
+			api.apiURL ? api.apiURL("/runcomfy/perf") : "/runcomfy/perf",
+			new Blob([JSON.stringify(payload)], { type: "application/json" }),
+		);
+	} catch (e) {
+		// sendBeacon can throw on oversized payloads; nothing to do here
+	}
+});
 
 app.registerExtension({
 	name: "runcomfy.Perf",
@@ -112,6 +149,7 @@ app.registerExtension({
 		// directly measures "browser navigates -> canvas ready". Deliberately
 		// not awaited: the app may await setup hooks, and the measurement
 		// waits for signals that can arrive after them.
-		measureAndReport(Math.round(performance.now()));
+		setupMs = Math.round(performance.now());
+		measureAndReport();
 	},
 });

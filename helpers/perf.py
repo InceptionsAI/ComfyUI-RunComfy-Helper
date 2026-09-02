@@ -17,10 +17,10 @@ rate_window_count = 0
 
 NUMBER_KEYS = (
     "canvas_ready_ms", "setup_ms", "graph_configured_ms",
-    "ttfb_ms", "html_ms", "dom_content_loaded_ms",
+    "ttfb_ms", "html_ms", "dom_content_loaded_ms", "abandoned_ms",
 )
-BOOL_KEYS = ("incomplete", "painted")
-STRING_KEYS = ("visibility", "page")
+BOOL_KEYS = ("incomplete", "painted", "late", "abandoned")
+STRING_KEYS = ("visibility", "page", "load_id")
 GROUP_KEYS = (
     "object_info", "bundles", "node_extensions",
     "api_misc", "templates", "resources_total",

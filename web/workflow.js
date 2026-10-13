@@ -93,9 +93,23 @@ app.registerExtension({
 			if (customWorkflow === null) {
 				return;
 			}
-			localStorage.setItem('workflow', JSON.stringify(customWorkflow));
-			localStorage.setItem('runcomfy.has_preloaded_workflow', true);
-			console.log("Custom workflow loaded by runcomfy.Workflows extension");
+			// New users get a blank canvas and the templates browser instead of the default graph; skip that.
+			await app.extensionManager.setting.set('Comfy.TutorialCompleted', true);
+			// With nothing to restore, the frontend loads its default graph via loadGraphData() without data.
+			// Swap in the RunComfy workflow for that call, after the canvas is ready.
+			const loadGraphData = app.loadGraphData;
+			app.loadGraphData = async function (graphData, ...args) {
+				app.loadGraphData = loadGraphData;
+				if (graphData) {
+					return loadGraphData.call(this, graphData, ...args);
+				}
+				const result = await loadGraphData.call(this, customWorkflow, ...args);
+				if (result !== false) {
+					localStorage.setItem('runcomfy.has_preloaded_workflow', true);
+					console.log("Custom workflow loaded by runcomfy.Workflows extension");
+				}
+				return result;
+			};
 		}
 	}
 

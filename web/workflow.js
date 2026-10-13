@@ -24,57 +24,9 @@ function hasPreloadedWorkflow() {
 	}
 }
 
-// Apply rgthree workaround to prevent empty workflow override
-function applyRgthreeWorkaround() {
-	let isSuccessfullyLoaded = false;
-	let lastSuccessfulLoadTime = 0;
-	let isRgthreeLoaded = false;  // Whether current workflow has rgthree nodes
-
-	// backup original function
-	const originalLoadGraphData = app.loadGraphData;
-	app.loadGraphData = function (graph) {
-		const incomingNodeCount = graph?.nodes?.length || 0;
-		const currentNodeCount = app.graph?.nodes?.length || 0;
-		const now = Date.now();
-
-		// Check if incoming workflow has rgthree nodes
-		const isRgthreeLoading = graph?.nodes?.some(node =>
-			node.type && node.type.includes('(rgthree)')
-		) || false;
-
-		if (isRgthreeLoading) {
-			console.log("[RunComfy] Rgthree is loading");
-		}
-		// status check: Prevent rgthree's empty workflow "fix" from overriding loaded workflows
-		const isRgthreeAutoFix = now - lastSuccessfulLoadTime < 1500;
-		const isRgthreeOverride = incomingNodeCount === 0 && currentNodeCount > 0 &&
-			isSuccessfullyLoaded && isRgthreeAutoFix &&
-			isRgthreeLoaded;  // Current workflow has rgthree nodes
-
-		if (isRgthreeOverride) {
-			console.log("[RunComfy] Prevented empty workflow override caused by rgthree link-fixer");
-			return Promise.resolve();
-		}
-
-		// Track successful loads
-		if (incomingNodeCount > 0) {
-			isSuccessfullyLoaded = true;
-			lastSuccessfulLoadTime = now;
-			isRgthreeLoaded = isRgthreeLoading;  // Update current workflow rgthree status
-		}
-
-		return originalLoadGraphData.apply(this, arguments);
-	};
-}
-
-
-
 app.registerExtension({
 	name: "runcomfy.Workflows",
 	async init() {
-		// Apply rgthree workaround (only activates when rgthree nodes are present)
-		// applyRgthreeWorkaround();
-
 		window.addEventListener('message', async (event) => {
 			// Determine the target origin
 			const targetOrigin = event.origin !== "null" && event.origin !== "" ? event.origin : "*";
@@ -90,25 +42,29 @@ app.registerExtension({
 
 		if (!hasPreloadedWorkflow()) {
 			const customWorkflow = await getWorkflow();
-			if (customWorkflow === null) {
+			if (!Array.isArray(customWorkflow?.nodes)) {
 				return;
 			}
 			// New users get a blank canvas and the templates browser instead of the default graph; skip that.
-			await app.extensionManager.setting.set('Comfy.TutorialCompleted', true);
-			// With nothing to restore, the frontend loads its default graph via loadGraphData() without data.
-			// Swap in the RunComfy workflow for that call, after the canvas is ready.
+			// The setting only exists on frontend 1.8.7+.
+			if (app.extensionManager?.setting?.get('Comfy.TutorialCompleted') === false) {
+				await app.extensionManager.setting.set('Comfy.TutorialCompleted', true);
+			}
+			// The first startup load either restores the user's own workflow or, with nothing to restore,
+			// loads the default graph via loadGraphData() without data. Load the RunComfy workflow for the latter.
 			const loadGraphData = app.loadGraphData;
-			app.loadGraphData = async function (graphData, ...args) {
-				app.loadGraphData = loadGraphData;
-				if (graphData) {
-					return loadGraphData.call(this, graphData, ...args);
-				}
-				const result = await loadGraphData.call(this, customWorkflow, ...args);
-				if (result !== false) {
+			let pending = true;
+			app.loadGraphData = function (graphData, ...args) {
+				if (pending) {
+					pending = false;
 					localStorage.setItem('runcomfy.has_preloaded_workflow', true);
-					console.log("Custom workflow loaded by runcomfy.Workflows extension");
+					if (!graphData) {
+						console.log("Loading custom workflow by runcomfy.Workflows extension");
+						// Go through app.loadGraphData again so wrappers added after this one see the workflow too.
+						return app.loadGraphData(customWorkflow, ...args);
+					}
 				}
-				return result;
+				return loadGraphData.apply(this, arguments);
 			};
 		}
 	}

@@ -1,0 +1,19 @@
+web/workflow.js
+  s_fc7e6a7049ce30::t_c2bc1f4850f63a 45,49-54,56-59,61-65,67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81d8a9943c0f376d86db9277ed13417b8128e972",
+  "prompts": {},
+  "sessions": {
+    "s_fc7e6a7049ce30": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4be7bea5-e970-47b5-9497-abb218bdc6fe",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

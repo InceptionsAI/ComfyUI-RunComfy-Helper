@@ -1,0 +1,21 @@
+README.md
+  s_69730809f46fc9::t_0ae2fc652e9088 21,23-25
+helpers/perf.py
+  s_69730809f46fc9::t_d3f51c0618a3a1 7-8,15-17,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "27d0576644ee85570fd2d132a9ccfa0cac09c0c8",
+  "prompts": {},
+  "sessions": {
+    "s_69730809f46fc9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a5ddff9-211a-4174-9396-136ff4b2d113",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

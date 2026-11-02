@@ -1,0 +1,23 @@
+web/perf.js
+  s_69730809f46fc9::t_6b5fccb7e137e1 31-36,38,40-42,44-45,47,50-54,57,72,74,76,85-136,152-153
+README.md
+  s_69730809f46fc9::t_611dc0247ca718 31-37
+helpers/perf.py
+  s_69730809f46fc9::t_d9115f81b86895 20,22-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "09e3d144f2f924cd9baa59b24b7782843d60da8f",
+  "prompts": {},
+  "sessions": {
+    "s_69730809f46fc9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a5ddff9-211a-4174-9396-136ff4b2d113",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

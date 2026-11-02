@@ -1,0 +1,21 @@
+web/manager-dialog.js
+  s_c62d58782c646d::t_cdeba740c7accd 3-4,11-12,14,20
+  s_c62d58782c646d::t_06a460a7832add 1-2,13,18-19,21-23,29-40
+  s_c62d58782c646d::t_ce9eb2815bc3fd 5-10,15-17,24-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1912068ad3fabc044519af6eaa98d9d534c9241e",
+  "prompts": {},
+  "sessions": {
+    "s_c62d58782c646d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1cd9b9ac-f7e0-4aaa-9664-55b233f4f75e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

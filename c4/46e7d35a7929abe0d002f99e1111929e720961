@@ -1,0 +1,19 @@
+web/open-manager.js
+  s_c62d58782c646d::t_73801b7f7d1487 34-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c446e7d35a7929abe0d002f99e1111929e720961",
+  "prompts": {},
+  "sessions": {
+    "s_c62d58782c646d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1cd9b9ac-f7e0-4aaa-9664-55b233f4f75e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Loner <yinjiakang@gmail.com>"
+    }
+  }
+}

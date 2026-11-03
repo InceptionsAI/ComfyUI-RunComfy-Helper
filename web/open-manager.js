@@ -31,7 +31,10 @@ async function openManager() {
 
 app.registerExtension({
 	name: "runcomfy.OpenManager",
-	async init() {
+	// setup runs once ComfyUI has loaded and every extension has registered its
+	// commands and buttons. Before that there is no reply, so the page can tell
+	// "still loading" apart from "no Manager".
+	async setup() {
 		window.addEventListener("message", async (event) => {
 			if (event.data !== "runcomfy.open_manager") {
 				return;
